@@ -1,4 +1,4 @@
-<img width="1289" height="929" alt="image" src="https://github.com/user-attachments/assets/256d51b4-836d-4676-97ec-1f590f677623" /><img width="766" height="125" alt="image" src="https://github.com/user-attachments/assets/ffcc63da-7756-49e8-9e0d-7afb14c2a566" />### Project Overview
+### Project Overview
 A project where we'll find and clean a large dataset, build and train various ML models, and then report the training performance of such models
 
 
