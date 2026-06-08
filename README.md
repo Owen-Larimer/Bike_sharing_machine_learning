@@ -1,5 +1,5 @@
 ### Project Overview
-A project where we'll find and clean a large dataset, build and train various ML models, and then report the training performance of such models
+A project where we'll find and clean a large dataset, build and train various ML models, and then report the training performance of such models. Our goal with this machine learning is to see if we can predict how many riders this bikesharing program will have at certain times of day based on a variety of factors. This would be an important prediction for any bikesharing company to make as it lets them know how many bikes they should need to be avilable at certain times.
 
 
 ### Data Sources
@@ -97,7 +97,7 @@ test_data.to_csv("cleaned_test_data.csv")
 
 Now we'll be working in the **proj3_machine_learning.ipynb** file. We'll need all the same imports as earlier, aside from the OneHotEncoder. 
 
-We'll start by loading in our data, and we'll initially remove our useless or highly correlated features:
+We'll start by loading in our data, and we'll initially remove our useless or highly correlated features, in addition to our 'casual' and 'registered' rider count columns since those are what we'll attempt to predict.
 
 ```python
 train_data = pd.read_csv('cleaned_train_data.csv')
@@ -664,13 +664,104 @@ def train_multiple_seeds(X_train, y_train, X_valid, y_valid, n_seeds=10, epochs=
 
 trained_nn_model, valid_rmses, valid_maes, train_rmses = train_multiple_seeds(X_train, y_train, X_valid, y_valid, n_seeds=10)
 ```
+And when we run that we get: 
+<img width="1030" height="752" alt="image" src="https://github.com/user-attachments/assets/d13cb1d2-6689-4578-ad68-2539dfd37f76" /> 
 
 
+Now we'll apply the model to the test set: 
+
+```python    
+def evaluation_step(X_test, y_test, trained_model, n_seeds=10):
+    test_rmses = []  
+    test_maes = []
+    
+    X_test_tensor = torch.tensor(X_test.values, dtype=torch.float32)
+    y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32).view(-1, 1)
+
+    for seed in range(n_seeds):
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+
+        trained_model.eval()
+
+        with torch.no_grad():
+            y_test_predictions = trained_model(X_test_tensor)
+
+        rmse = np.sqrt(mean_squared_error(y_test_tensor.numpy(), y_test_predictions.numpy()))
+        mae_test = mean_absolute_error(y_test_tensor.numpy(), y_test_predictions.numpy())
+
+        test_rmses.append(rmse)
+        test_maes.append(mae_test)
+
+        print(f"Seed {seed} - Test RMSE: {rmse:.3f}, MAE: {mae_test:.3f}")
+
+    avg_test_rmse = np.mean(test_rmses)
+    avg_test_mae = np.mean(test_maes)
+
+    print(f"Average Test RMSE over {n_seeds} seeds: {avg_test_rmse:.3f}")
+    print(f"Average Test MAE over {n_seeds} seeds: {avg_test_mae:.3f}")
+
+    return test_rmses, test_maes
+
+test_rmse, test_mae = evaluation_step(X_test, y_test, trained_nn_model, n_seeds=10)
+```
+
+Yielding: 
+<img width="638" height="410" alt="image" src="https://github.com/user-attachments/assets/a0f04884-34c1-4927-90b5-9847e43139ee" /> 
+
+And to make it easier to visualize how good our neural net is throughout multiple seeds, we can visualize the RMSEs of all it on all three sets with a simple matplotlib figure:
+
+```python
+n_seeds = 10 #(From function)
+plt.plot(range(n_seeds), valid_rmses, label='Validation RMSE')
+plt.plot(range(n_seeds), test_rmse, label='Test RMSE')
+plt.plot(range(n_seeds), train_rmses, label='Train RMSE')
+plt.xlabel('Seed')
+plt.ylabel('RMSE')
+plt.title('RMSE for Validation, Train, and Test Sets Over Multiple Seeds')
+plt.legend()
+``` 
+
+<img width="1146" height="906" alt="image" src="https://github.com/user-attachments/assets/f3529e61-e9ce-4ac7-b4b0-e81a9b5d2968" /> 
+
+Keep in mind here that the test RMSE and MAE are the same in every seed because the model we are running through the function is pre-trained, and thus the weights do not change.
 
 
 ### Results:
 
+Now we can analyze our models to pick the best one.
 
+
+I wanted to try and predict how many riders the bike sharing system would get every
+hour based upon the features measured in the dataset. This kind of information would
+greatly help a bike-share company because such a model would help them distribute
+bikes and the hubs around the city such that there are enough bikes for all clients at key
+times.
+
+Since all my data was numerical, my models were all regression-based. As such, I was
+trying to reduce the chosen loss function (mainly RMSE and R^2) as much as possible. I
+used sklearn’s GridSearchCV library as a way of tuning hyperparameters in the relevant
+models. The documentation can be found here:
+[Sklearn Model Selection GridSearchCV](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GridSearchCV.html)
+
+<img width="1280" height="934" alt="image" src="https://github.com/user-attachments/assets/a15e8f79-19a0-490d-8f81-258d8462e278" /> 
+
+
+Looking at my results, it appears that the Random Forest model with tuned
+hyperparameters was the most effective at predicting the count of riders every hour, with
+a test RMSE of 69.269 and a test R^2 of 0.86. For clarity, the R^2 measures the variance
+of the dependent variable that can be explained purely due to the features, which means
+in the case of the Random Forest that ~86% of the variance in our testing set could be
+explained from the features we tested, indicating that this is a good model. It’s clear that
+this random forest regressor and the decision tree regressor were the best at predicting
+here by a significant margin. This isn’t purely due to the tuning either, since the SVM (or
+rather, SVR for regression) I created was also tuned using GridSearch and performed
+much more poorly than those two. Furthermore, it seems the SVM was overfitting on the
+training data a lot, particularly in the case of the standard RBF-kernelized SVR (82
+compared to 102 and 103). All of the others overfit slightly (except perhaps the neural
+network, whose training RMSE was very close to that of the validation and test sets), but
+we would expect the training loss to be at least a little better than the test and validation
+loss.
 
 
 
