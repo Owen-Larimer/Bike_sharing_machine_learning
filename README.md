@@ -26,8 +26,8 @@ full_data.describe()
 ``` 
 <img width="1994" height="565" alt="image" src="https://github.com/user-attachments/assets/2183d26a-3bae-4299-810d-191a918a7a1b" /> 
 
-Looking at the datatypes with full_data.dtypes: 
-<img width="344" height="636" alt="image" src="https://github.com/user-attachments/assets/fab2f5f3-5022-4bc9-8224-4b9befa2fb9c" />
+Looking at the datatypes with full_data.dtypes:  
+<img width="344" height="636" alt="image" src="https://github.com/user-attachments/assets/fab2f5f3-5022-4bc9-8224-4b9befa2fb9c" /> 
 
 The first and best change we can make is making the date variable (dteday) into a datetime such that we can actually do math with it. Like so:
 ```python
